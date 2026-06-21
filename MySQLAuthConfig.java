@@ -14,18 +14,15 @@ public class MySQLAuthConfig {
             @Override
             public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
                 try {
-                    // Write MySQL config to force native password + skip SSL (needed for old Python connector 2.x)
-                    Process writeConf = Runtime.getRuntime().exec(new String[]{
-                        "sudo", "bash", "-c",
-                        "printf '[mysqld]\\ndefault_authentication_plugin=mysql_native_password\\nskip_ssl\\n' > /etc/mysql/conf.d/native_auth.cnf"
+                    // Upgrade Python mysql connector from 2.2.9 (incompatible with MySQL 8.0) to 8.x
+                    Process pip = Runtime.getRuntime().exec(new String[]{
+                        "sudo", "pip3", "install", "--upgrade", "mysql-connector-python"
                     });
-                    writeConf.waitFor();
+                    pip.waitFor();
+                } catch (Exception ignored) {}
 
-                    // Restart MySQL so the config takes effect
-                    Process restart = Runtime.getRuntime().exec(new String[]{"sudo", "service", "mysql", "restart"});
-                    restart.waitFor();
-
-                    // Now change root auth plugin to mysql_native_password with known password
+                try {
+                    // Change root to mysql_native_password so both Java and Python can connect via TCP
                     Process alter = Runtime.getRuntime().exec(new String[]{
                         "sudo", "mysql", "-uroot", "-e",
                         "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'mysql'; FLUSH PRIVILEGES;"
