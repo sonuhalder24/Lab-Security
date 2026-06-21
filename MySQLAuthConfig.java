@@ -14,9 +14,16 @@ public class MySQLAuthConfig {
             @Override
             public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
                 // Step 1: upgrade Python MySQL connector (old 2.2.9 doesn't support MySQL 8.0)
+                // Uninstall the old package first to avoid namespace conflicts
+                try {
+                    Process uninstall = Runtime.getRuntime().exec(new String[]{
+                        "sudo", "pip3", "uninstall", "mysql-connector", "-y"
+                    });
+                    uninstall.waitFor();
+                } catch (Exception ignored) {}
                 try {
                     Process pip = Runtime.getRuntime().exec(new String[]{
-                        "sudo", "pip3", "install", "--upgrade", "mysql-connector-python"
+                        "sudo", "pip3", "install", "mysql-connector-python"
                     });
                     pip.waitFor();
                 } catch (Exception ignored) {}
